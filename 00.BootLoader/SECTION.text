@@ -1,0 +1,10 @@
+jmp 0x07C0 : START
+
+START:
+	mov ax, 0x07CO
+	mov ds, ax
+	mov ax, 0xB800
+	mov es, ax
+
+	mov byte [ es: 0x00 ], 'M'
+	mov byte [ es: 0x01 ], 0x4A
