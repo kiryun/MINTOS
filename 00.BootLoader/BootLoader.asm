@@ -1,6 +1,7 @@
 [ORG 0x00]	; Code start address : 0x00
 [BITS 16]	; 16 bit environment
 
+
 SECTION .text	; text section(Segment)
 
 jmp 0x07C0:START	; copy 0x0C70 to cs, and goto START
