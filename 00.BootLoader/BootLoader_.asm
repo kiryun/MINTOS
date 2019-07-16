@@ -3,132 +3,173 @@
 
 SECTION.text	; text section(Segment)
 
-jmp 0x07C0:START	; copy 0x0C70 to cs, and goto START
+jmp 0x07C0:START		; copy 0x07C0 to cs, and goto START
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	environment seting value for os
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-TOTALSECTORCOUNT:	dw 1025	; os image size without bootloader
-				; max 1152 sector(0x90000byte)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; code domain
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+TOTALSECTORCOUNT:	dw	1024
 
 START:
-	mov ax, 0x07C0	; convert start address to 0x0C70
+	mov ax, 0x07C0 	; convert start address to 0x07C0
 	mov ds, ax	; set ds register
 	mov ax, 0xB800	; base video address
-	mov es, ax	; set es register(videos address)
+	mov es, ax	; set es register(video address)
 
-	; create stack domain 0x0000:0000 ~ 0x0000:FFFF (64kb size)
-	mov ax, 0x000	; convert stack start address to segment register value
-	mov ss, ax	; set ss register
-	mov sp, 0xFFFE	; set sp register address (0xFFFE)
-	mov bp, 0xFFFE	; set bp register address (sp)
+	;STACK Generate code (0x0000:0000~ 0x0000:FFFF, 64KB)
+	mov ax, 0x0000	; 
+	mov ss, ax	;
+	mov sp, 0xFFFE	;
+	mov bp,	0xFFFE	;
 
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; clear display, set value = green
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	mov si, 0	; initialize si register
+	;SI Reg(string index) initialize
+	mov si, 0
 
 .SCREENCLEARLOOP:
 	mov byte [ es: si ], 0		; delete character at si index
-	mov byte [ es: si + 1], 0x0A	; copy 0x)A(black / gree)
+	mov byte [ es: si + 1 ], 0x0A 	; copy 0x0A(black / green)
 	add si, 2			; go to next location
-	cmp si, 80 * 25 *2		; compare si and screen size
+	cmp si, 80 * 25 * 2		; compare si and screen size	
 	jl .SCREENCLEARLOOP		; end loop if si == screen size
+
+	push MESSAGE1			; push message's address
+	push 0				; Y val
+	push 0				; X val
+	call PRINTMESSAGE		; call function
+	add sp,	6			; cdecl convention
 	
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; print start message at top display
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	push MESSAGE1		; printing message addr push in stack
-	push 1			; display Y location(1) push in stack
-	push 0			; display X location(0) push in stack
-	call RPINTMESSAGE	; call PRINTMESSAGE function
-	add sp, 6		; remove parameter
-	
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; loading os image in disk
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; reset before read disk
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-RESETDISK:			; start disk reset code
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; call BIOS reset function
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; service number 0, drive number(0=Floppy)
+	push IMAGELOADINGMESSAGE	; push image loading message's address
+	push 1				; Y val(1)
+	push 0				; X val(0)
+	call PRINTMESSAGE		; call function
+	add sp, 6			; cdecl convention
+
+RESETDISK:
+	;BIOS Reset Function : service number 0, drive number 0 (Floppy)
 	mov ax, 0
-	mov dl, -
+	mov dl, 0
 	int 0x13
-	; error handle
 	jc HANDLEDISKERROR
-	
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; read sector in disk
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; set the addr to copy the contents of the disk to memory as 0x10000
-	mov si, 0x1000	; convert copy the contents of the disk (0x10000) to segement register
-	mov es, si	; set es segement register
-	mov bx, 0x0000	; set bx register
-			; address to copy = 0x1000:0000(0x10000)
-	
-	mov di, word[TOTALSECTORCOUNT]	; set di register number of address to copy sector
 
-READDAT:
-	; check all of sector read
-	cmp di, 0	; compare to number of os image sector and 0
-	je READEND	; if number of copy to sector == 0 then READEND(read complete)
-	sub di, 0x1	; copty to sector --
-	
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; call BIOS read function
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	mov ah, 0x02			; BIOS service number 2(Read sector)
-	mov al, 0x1			; number of sectors to read = 1
-	mov ch, byte [TRACKNUMBER]	; set track number
-	mov cl, byte [SECTORNUMBER]	; set sector number
-	mov dh, byte [HEADNUMBER]	; set head number
-	mov dl, 0x00			; set drive number(0 = Floppy)
-	int 0x13			; call interrupt service
-	jc HANDLEDISKERROR		; error -> HANDLEDISKERROR
-	
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; 
-	
-		
+	;Read Sector from disk
+	mov si, 0x1000	;set si : 0x1000, bx : 0x0000 -> 0x1000:0000
+	mov es, si
+	mov bx, 0x0000
 
+	mov di, word [ TOTALSECTORCOUNT ]
 
-	mov si, 0			; initialize si register
-	mov di, 0			; initialize di register
+READDATA:
+	cmp di, 0			; check remaining sectors
+	je READEND			; jump if di == 0 (ZF is set)
+	sub di, 0x1			; di-- (if sectors remain)
+	
+	; Call BIOS Read Function
+	mov ah, 0x02			; Service Number : 0x02(Read Sector)
+	mov al, 0x1			; Read 1 Sector 
+	mov ch, byte [ TRACKNUMBER ]	; set Track Number
+	mov cl, byte [ SECTORNUMBER ]	; set Sector Number
+	mov dh, byte [ HEADNUMBER ]	; set Head Number
+	mov dl, 0x00			; set Drive Number(Floppy)
+	int 0x13			; interrupt
+	jc HANDLEDISKERROR		; Error Handling (if CF == 1)
 
+	; Calculate copy, track, head, sector address
+	add si, 0x0020			; convert 512 byte to seg reg
+	mov es, si			; increase address amount of 1 sector
+	
+	mov al, byte [ SECTORNUMBER ]	; SECTORNUMBER++
+	add al, 0x01			; 
+	mov byte [ SECTORNUMBER ], al	; 
+	
+	cmp al, 19			; if (SECTORNUMBER <= 18)
+	jl READDATA			; Sign flag is opposite with Overflow Flag
+
+	xor byte [ HEADNUMBER ], 0x01	; toggle head number
+	mov byte [ SECTORNUMBER ], 0x01	; set Sector number to 0x01
+	cmp byte [ HEADNUMBER ], 0x00	; cmp 0x00 & head number
+	jne READDATA			; head num != 0 -> loop
+
+	add byte [ TRACKNUMBER ], 0x01	; increase track number 1
+	jmp READDATA			; loop
+
+READEND:
+	push LOADINGCOMPLETEMESSAGE	; loading complete!
+	push 1				; Y location
+	push 20				; X location
+	call PRINTMESSAGE		
+	add sp, 6			; cdecl convention
+	
+	; execute os image
+	jmp 0x1000:0000			
+
+HANDLEDISKERROR:
+	push DISKERRORMESSAGE		
+	push 1
+	push 20	
+	call PRINTMESSAGE		
+	
+	jmp $
+
+PRINTMESSAGE:
+	push bp
+	mov bp, sp			; stack frame
+	
+	push es
+	push si
+	push di
+	push ax
+	push cx
+	push dx
+	
+	mov ax, 0xB800			; video memory start addr
+	mov es, ax			; set es 
+	
+	; get line addr
+	mov ax, word [ bp + 6 ]		; set ax with y location
+	mov si, 160			; set si with the size of the line (160b)
+	mul si				; y location * line size (save on ax)
+	mov di, ax			; set y address on di
+
+	; get video memory address
+	mov ax, word [ bp + 4 ]		
+	mov si, 2
+	mul si
+	add di, ax			; y location + x location
+	
+	mov si, word [ bp + 8 ]		; string address (param 03)
+	
 .MESSAGELOOP:
-	mov cl, byte [ si + MESSAGE1 ]	; copy charactor which is on the address MESSAGE1's addr + SI register's value
-	cmp cl, 0			; compare the charactor and 0
+	mov cl, byte [ si ]	; copy character which is on the adress MESSAGE1's addr + SI register's value
+	cmp cl, 0			; compare the character and 0 
 	je .MESSAGEEND			; if value is 0 -> string index is out of bound -> finish the routine
 
-	mov byte [ es : di], cl		; if value is not 0 -> print the charactor on 0xB800 + di
+	mov byte [ es : di ], cl	; if value is not 0 -> print the character on 0xB800 + di
 	add si, 1			; go to next index
 	add di, 2			; go to next video address
-
+	
 	jmp .MESSAGELOOP		; loop code
 
 .MESSAGEEND:
-	jmp $				; infinite loop
+	pop dx
+	pop cx
+	pop ax
+	pop di
+	pop si
+	pop es
+	pop bp
+	ret
 
-MESSAGE1:	db 'OS Boot Loader Start!!', 0	; define the string tha I want to print
+MESSAGE1:	db 'MINT64 OS Boot Loader Start~!!', 0 ;define the string that I want to print
 
-times 510 - ($ - $$)	db	0x00	; $ : current line's address
-					; $$ : current section's base address
-					; $ - $$ : offset!
-					; 510 - ($ - $$) : offset to addr 510
-					; db - 0x00 : declare 1byte and init to 0x00
-					; time : loop
-					; fill 0x00 from current address to 510
+DISKERRORMESSAGE:	db	'DISK Error~!!', 0
+IMAGELOADINGMESSAGE:	db	'OS Image Loading...', 0
+LOADINGCOMPLETEMESSAGE:	db	'Complete~!!', 0
 
-db 0x55	; declare 1byte and init to 0x55
-db 0xAA	; declare 1byte and init to 0xAA
-	; Address 511 : 0x55
-	; 512 : 0xAA -> declare that this sector is boot sector
+SECTORNUMBER:		db	0x02
+HEADNUMBER:		db	0x00
+TRACKNUMBER:		db	0x00
+
+times 510 - ($ - $$)	db	0x00	; $ : current line's addr, $$ : current section's base address -> $ - $$ : Offset!
+					; 510 - ( $ - $$ ) : offset to addr 510, db - 0x00 : declare 1byte and init to 0x00
+					; time : loop -> fill 0x00 from current address to 510
+
+db 0x55	; declare 1 byte and init to 0x55
+db 0xAA	; declare 1 byte and init to 0xAA
+	; Address 511 : 0x55, 512 : 0xAA -> declare that this sector is boot sector
