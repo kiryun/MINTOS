@@ -38,4 +38,4 @@ clean:
 	make -C 01.Kernel32 clean
 	make -C 04.Utility clean
 	rm -f Disk.img
-	make -f ImageMaker.exe
+	rm -f ImageMaker.exe

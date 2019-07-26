@@ -29,8 +29,8 @@ int main(int argc, char* argv[])
     }
 
     //Disk.img 생성
-    if( (iTargetFd = open("Disk.img", O_RDWR || O_CREAT || O_TRUNC,
-     __S_IREAD || __S_IWRITE)) == -1 ){
+    if( (iTargetFd = open("Disk.img", O_RDWR | O_CREAT | O_TRUNC,
+     __S_IREAD | __S_IWRITE)) == -1 ){
         fprintf(stderr, "[ERROR] Disk.img open fail.\n");
         exit(-1);
     }
