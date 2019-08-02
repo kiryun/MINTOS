@@ -4,7 +4,7 @@
 NASM32 = nasm
 GCC32 = gcc -c -m32 -ffreestanding
 LD32 = ld -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
-OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
+OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary # obj파일의 특정 섹션 추출
 
 OBJECTDIRECTORY = Temp
 SOURCEDIRECTORY = Source
@@ -37,6 +37,7 @@ $(OBJECTDIRECTORY)/Kernel32.elf.bin: ExecuteInternalBuild
 	$(OBJCOPY32) $(OBJECTDIRECTORY)/Kernel32.elf $@
 
 # 엔트리 포인트와 커널을 합쳐서 보호 모드 바이너리 생성
+# Dependency 2번째 라벨이 존재 하기때문에 바로위에있는 $(OBJECTDIRECTORY)/Kernel32.elf.bin: 로 이동
 Kernel32.bin: $(OBJECTDIRECTORY)/EntryPoint.bin $(OBJECTDIRECTORY)/Kernel32.elf.bin
 	cat $^ > $@
 

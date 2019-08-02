@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     int iKernel32Sectorcount;
     int iSourceSize;
 
-    if( argc < 3 ){
+    if( argc < 3 ){ // BootLoader.asm Kernel32.bin System명령어
         fprintf(stderr, "[ERROR] ImageMaker BootLoader.bin Kernel32.bin\n");
         exit(-1);
     }
