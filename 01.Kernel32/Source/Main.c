@@ -1,4 +1,5 @@
 #include "Types.h"
+#include "Page.h"
 
 void kPrintString( int iX, int iY, const char* pcString );
 BOOL kInitializeKernel64Area();
@@ -14,10 +15,10 @@ void Main(void)
     DWORD i;
 
     // 메시지 표시
-    kPrintString(0, 3, "C Language Kernel Started!");
+    kPrintString(0, 3, "C Language Kernel Start.....................[Pass]");
   
     // 최소 메모리 크기를 만족하는 지 검사
-    kPrintString(0, 4, "Minimum Memory Size Check.......................[ ]");
+    kPrintString(0, 4, "Minimum Memory Size Check...................[    ]");
     if(kIsMemoryEnough() == FALSE){
         kPrintString(45, 4, "Fail");
         kPrintString(0, 5, "Not Enough Memory!! KihOS Requires Over 64Mbyte Meemory!");
@@ -28,13 +29,18 @@ void Main(void)
     }
 
     // IA-32e 모드의 커널 영역을 초기화
-    kPrintString(0, 5, "IA-32e Kernel Area Initialize..........................[ ]");
+    kPrintString(0, 5, "IA-32e Kernel Area Initialize...............[    ]");
     if(kInitializeKernel64Area() == FALSE){
         kPrintString(45, 5, "Fail");
         kPrintString(0, 6, "IA-32e Kernel Area Initialization Fail!");
         while(1);
     }
     kPrintString( 45, 5, "Pass");
+
+    // IA-32e모드 커널을 위한 페이지 테이블 생성
+    kPrintString(0, 6, "IA-32e Page tables Initialize...............[    ]");
+    kInitializePageTables();
+    kPrintString(45, 6, "Pass");
 
     // 무한 루프
     while(1);

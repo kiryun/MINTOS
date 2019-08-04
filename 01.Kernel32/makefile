@@ -25,6 +25,7 @@ $(OBJECTDIRECTORY)/EntryPoint.bin: $(SOURCEDIRECTORY)/EntryPoint.s
 # 커널의 C 소스 파일에 대한 의존성 정보 생성
 dep:
 	@echo === Make Dependancy File ===
+	# makefile의 InternalDependency만 실행하고 빠짐
 	make -C $(OBJECTDIRECTORY) -f ../makefile InternalDependency
 	@echo === Dependency Search Complete ===
 
