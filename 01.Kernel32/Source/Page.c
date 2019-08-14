@@ -1,5 +1,6 @@
 #include "Page.h"
 
+
 // IA-32e 모드 커널을 위한 페이지 테이블 생성
 void kInitializePageTables(void)
 {
