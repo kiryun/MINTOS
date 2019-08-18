@@ -124,7 +124,7 @@ BOOL kIsMemoryEnough()
     // 0x100000(1MB)부터 검사 시작
     pdwCurrentAddress = (DWORD*)0x100000;
 
-    // 0x400000(64MB)까지 루프를 돌면서 확인
+    // 0x400000(4MB)까지 루프를 돌면서 확인
     while( (DWORD)pdwCurrentAddress < 0x400000 ){
         *pdwCurrentAddress = 0x12345678;
 

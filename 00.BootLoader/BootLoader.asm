@@ -32,6 +32,7 @@ START:
 	mov si,	0	; SI 레지스터(문자열 원본 인덱스 레지스터)를 초기화
 
 .SCREENCLEARLOOP:
+	; es: si = es 세그먼트: 오프셋
 	mov byte [ es: si ], 0		; delete character at si index
 	mov byte [ es: si + 1], 0x0A	; copy 0x)A(black / gree)
 	add si, 2			; go to next location
