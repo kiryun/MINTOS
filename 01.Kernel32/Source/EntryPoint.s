@@ -145,6 +145,7 @@ GDTR:
 	dd ( GDT - $$ + 0x10000 )	; 아래에 위치하는 gdt테이블의 시작 addr
 
 ;GDT 테이블 정의
+;각각 모두 8byte임
 GDT:
 	; null디스크립터, 반드시 0으로 초기화해야 함
 	NULLDescriptor:
