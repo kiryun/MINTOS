@@ -1,5 +1,6 @@
 #include "Types.h"
 #include "Keyboard.h"
+#include "Descriptor.h"
 
 // 함수 선언
 void kPrintString(int iX, int iY, const char* pcString);
@@ -14,14 +15,30 @@ void Main()
 
     kPrintString(0, 10, "Switch To IA-32e Mode Success!");
     kPrintString(0, 11, "IA-32e C Language Kernel Start..............[Pass]");
-    kPrintString(0, 12, "Keyboard Activate...........................[    ]");
+
+    kPrintString(0, 12, "GDT Initialize And Switch For IA-32e Mode...[    ]");
+    kInitializeGDTTableAndTSS();
+    kLoadGDTR(GDTR_STARTADDRESS);
+    kPrintString(45, 12, "Pass");
+
+    kPrintString(0, 13, "TSS Segment Load............................[    ]");
+    kLoadTR(GDT_TSSSEGMENT);
+    kPrintString(45, 13, "Pass");
+
+    kPrintString(0, 14, "IDT Segment Load............................[    ]");
+    kInitializeIDTTables();
+    kLoadIDTR(IDTR_STARTADDRESS);
+    kPrintString(45, 14, "Pass");
+
+
+    kPrintString(0, 15, "Keyboard Activate...........................[    ]");
 
     // 키보드를 활성화
     if(kActivateKeyboard() == TRUE){
-        kPrintString(45, 12, "Pass");
+        kPrintString(45, 15, "Pass");
         kChangeKeyboardLED(FALSE, FALSE, FALSE);
     }else{
-        kPrintString(45, 12, "Fail");
+        kPrintString(45, 15, "Fail");
         while(1);
     }
     
@@ -36,24 +53,15 @@ void Main()
             if(kConvertScanCodeToASCIICode(bTemp, &(vcTemp[0]), &bFlags) == TRUE){
                 // 키가 눌려있으면 키의 ascii코드값을 화면에 출력
                 if(bFlags & KEY_FLAGS_DOWN){
-                    kPrintString(i++, 13, vcTemp);
+                    kPrintString(i++, 16, vcTemp);
+                    // 0이 입력되면 변수를 0으로 나누어 Divide Error 예외(벡터0번)를 발생시킴
+                    if(vcTemp[0] == '0'){
+                        // 아래코드를 수행하면 Divide Error 예외가 발생하여
+                        // 커널의 임시 핸들러가 수행됨
+                        bTemp = bTemp / 0;
+                    }
                 }
             }
         }
-    }
-}
-
-// 문자열을 x, y 위치에 출력
-void kPrintString(int iX, int iY, const char* pcString)
-{
-    CHARACTER* pstScreen = (CHARACTER*)0xB8000;
-    int i;
-
-    // x, y 좌표를 이용해서 문자열을 출력할 어드레스를 계산
-    pstScreen += (iY * 80) +iX;
-
-    // NULL이 나올 때까지 문자열 출력
-    for(i=0; pcString[i] != 0; i++){
-        pstScreen[i].bCharactor = pcString[i];
     }
 }
